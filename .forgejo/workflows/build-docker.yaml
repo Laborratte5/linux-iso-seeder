@@ -1,0 +1,31 @@
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '@monthly'
+
+enable-email-notification: true
+
+jobs:
+  publish-docker:
+    runs-on: ubuntu-act
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: https://code.forgejo.org/docker/setup-buildx-action@v3
+      - name: Login to Container Registry
+        uses: https://code.forgejo.org/docker/login-action@v3
+        with:
+          registry: git.ratte.dev
+          username: Laborratte5
+          password: ${{ secrets.PACKAGE_REGISTRY_TOKEN }}
+      - id: create_version_string
+        run: echo version_tag=$(git rev-parse --short HEAD)-$(date --utc --iso-8601) >> $FORGEJO_OUTPUT
+      - name: Build and push
+        uses: https://code.forgejo.org/docker/build-push-action@v6
+        with:
+          push: true
+          tags: |
+            git.ratte.dev/laborratte5/linux-iso-seeder:latest
+            git.ratte.dev/laborratte5/linux-iso-seeder:${{ steps.create_version_string.outputs.version_tag }}
